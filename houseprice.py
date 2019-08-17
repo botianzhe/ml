@@ -107,3 +107,11 @@ corr_matrix=house_train.corr()
 corr_matrix['median_house_value'].sort_values(ascending=False)
 
 #%%
+# 数据转换
+housing=house_train.drop('median_house_value',axis=1)
+labels=house_train['median_house_value'].copy()
+
+#%%
+
+
+#%%
