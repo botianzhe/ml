@@ -1,0 +1,7 @@
+{
+    "python.dataScience.jupyterServerURI": "local",
+    "python.linting.pylintEnabled": false,
+    "python.linting.pep8Enabled": true,
+    "python.pythonPath": "C:\\Users\\ypp86\\Anaconda3\\envs\\ml\\python.exe",
+    "python.linting.enabled": false
+}
