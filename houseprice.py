@@ -71,7 +71,8 @@ for train,test in split.split(house_with_id,house_with_id['income_cat']):
         train_set=house_with_id.loc[train]
         test_set=house_with_id.loc[test]
 train_set['income_cat'].value_counts()/len(train_set)
-
+for set in (train_set,test_set):
+        set.drop("income_cat",axis=1,inplace=True)
 #%%
 house_train=train_set.copy()
 #%%
@@ -86,4 +87,9 @@ label="population",c="median_house_value",cmap=plt.get_cmap("jet"),colorbar=True
 plt.legend()
 #%%
 # train_test_split
+#%%
+# 相关系数
+corr_matrix=house_train.corr()
+corr_matrix['median_house_value'].sort_values(ascending=False)
+
 #%%
