@@ -107,11 +107,65 @@ corr_matrix=house_train.corr()
 corr_matrix['median_house_value'].sort_values(ascending=False)
 
 #%%
-# 数据转换
+# 数据准备
 housing=house_train.drop('median_house_value',axis=1)
 labels=house_train['median_house_value'].copy()
 
 #%%
+# 缺失值处理
+print(housing.info())
+housing=housing.dropna(subset=['total_bedrooms'])
 
+housing.info()
+
+#%%
+housing.drop('total_bedrooms',axis=1,inplace=True)
+housing.info()
+
+
+#%%
+median = housing["total_bedrooms"].median()
+housing["total_bedrooms"]=housing["total_bedrooms"].fillna(median)
+housing["bedrooms_per_room"] = housing["total_bedrooms"]/housing["total_rooms"]
+housing.info()
+#%%
+# Imputer
+from sklearn.impute import SimpleImputer
+imputer=SimpleImputer(strategy="median")
+housing_num=housing.drop('ocean_proximity',axis=1)
+imputer.fit(housing_num)
+imputer.statistics_
+housing_num.median().values
+x=imputer.transform(housing_num)
+x.shape
+#%%
+housing_tr=pd.DataFrame(x,columns=housing_num.columns)
+housing_tr.describe()
+#%%
+# 文本类别数据转换
+#有问题 该转换器只能用来转换标签 在这里使用 LabelEncoder  没有出错的原因是该数据只有一列
+#文本特征值，在有多个文本特征列的时候就会出错
+from sklearn.preprocessing import LabelEncoder
+house_cat=housing['ocean_proximity']
+encoder=LabelEncoder()
+house_cat_encoder=encoder.fit_transform(house_cat)
+encoder.classes_
+
+
+#%%
+# 正确转换方式
+housing_cat_encoded, housing_categories = house_cat.factorize()
+
+#%%
+from sklearn.preprocessing import OneHotEncoder
+encoder=OneHotEncoder()
+house_onehot=encoder.fit_transform(housing_cat_encoded.reshape(-1,1))
+house_onehot.toarray()
+
+#%%
+from sklearn.preprocessing  import CategoricalEncoder
+encoder=CategoricalEncoder()
+house_onehot=encoder.fit_transform(housing_cat.reshape(-1,1))
+house_onehot
 
 #%%
