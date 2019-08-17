@@ -85,5 +85,5 @@ house_train.plot(kind="scatter",x='longitude',y='latitude',alpha=0.4,s=house_tra
 label="population",c="median_house_value",cmap=plt.get_cmap("jet"),colorbar=True)
 plt.legend()
 #%%
-# train_test_split?
+# train_test_split
 #%%
