@@ -93,3 +93,17 @@ corr_matrix=house_train.corr()
 corr_matrix['median_house_value'].sort_values(ascending=False)
 
 #%%
+from pandas.plotting import scatter_matrix
+cols=['longitude','latitude']
+scatter_matrix(house[cols],figsize=(12,8))
+
+#%%
+# 属性组合
+house_train["rooms_per_household"] = house_train["total_rooms"]/house_train["households"]
+house_train["bedrooms_per_room"] = house_train["total_bedrooms"]/house_train["total_rooms"]
+house_train["population_per_household"]=house_train["population"]/house_train["households"]
+
+corr_matrix=house_train.corr()
+corr_matrix['median_house_value'].sort_values(ascending=False)
+
+#%%
