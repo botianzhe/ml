@@ -1,11 +1,9 @@
 {
     "python.dataScience.jupyterServerURI": "local",
+    "python.linting.flake8Enabled": true,
     "python.linting.pylintEnabled": false,
-    "python.linting.pep8Enabled": true,
     "python.pythonPath": "C:\\Users\\ypp86\\Anaconda3\\envs\\ml\\python.exe",
     "python.linting.enabled": true,
-    "python.autoComplete.extraPaths": [
-        "C:\\Users\\ypp86\\Anaconda3\\envs\\ml\\Lib\\site-packages",
-        "C:\\Users\\ypp86\\Anaconda3\\envs\\ml\\Scripts"]
+    // "python.formatting.provider": "yapf",
   
 }

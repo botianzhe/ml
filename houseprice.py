@@ -113,14 +113,10 @@ labels=house_train['median_house_value'].copy()
 
 #%%
 # 缺失值处理
-print(housing.info())
-housing=housing.dropna(subset=['total_bedrooms'])
+# print(housing.info())
+# housing=housing.dropna(subset=['total_bedrooms'])
 
-housing.info()
-
-#%%
-housing.drop('total_bedrooms',axis=1,inplace=True)
-housing.info()
+# housing.info()
 
 
 #%%
@@ -157,36 +153,179 @@ encoder.classes_
 housing_cat_encoded, housing_categories = house_cat.factorize()
 
 #%%
-# OneHotEncoder
 from sklearn.preprocessing import OneHotEncoder
 encoder=OneHotEncoder()
 house_onehot=encoder.fit_transform(housing_cat_encoded.reshape(-1,1))
 house_onehot.toarray()
 
 #%%
-# 二者合并
-from sklearn.preprocessing  import CategoricalEncoder
+# 合并
+from data  import CategoricalEncoder
 encoder=CategoricalEncoder()
-house_onehot=encoder.fit_transform(housing_cat.reshape(-1,1))
-house_onehot
+house_onehot=encoder.fit_transform(house_cat.values.reshape(-1,1))
+house_onehot.toarray()
 
 #%%
-# 自定义转换器
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 from sklearn.base import BaseEstimator, TransformerMixin
 rooms_ix, bedrooms_ix, population_ix, household_ix = 3, 4, 5, 6
 class CombinedAttributesAdder(BaseEstimator, TransformerMixin):
-def __init__(self, add_bedrooms_per_room = True): # no *args or **kargs
-self.add_bedrooms_per_room = add_bedrooms_per_room
-def fit(self, X, y=None):
-return self # nothing else to do
-def transform(self, X, y=None):
-rooms_per_household = X[:, rooms_ix] / X[:, household_ix]
-population_per_household = X[:, population_ix] / X[:, household_ix]
-if self.add_bedrooms_per_room:
-bedrooms_per_room = X[:, bedrooms_ix] / X[:, rooms_ix]
-return np.c_[X, rooms_per_household, population_per_household,
-bedrooms_per_room]
-else:
-return np.c_[X, rooms_per_household, population_per_household]
-attr_adder = CombinedAttributesAdder(add_bedrooms_per_room=False)
-housing_extra_attribs = attr_adder.transform(housing.values)
+    def __init__(self, add_bedrooms_per_room = True): # no *args or **kargs
+        self.add_bedrooms_per_room = add_bedrooms_per_room
+    def fit(self, X, y=None):
+        return self # nothing else to do
+    def transform(self, X, y=None):
+        rooms_per_household = X[:, rooms_ix] / X[:, household_ix]
+        population_per_household = X[:, population_ix] / X[:, household_ix]
+        if self.add_bedrooms_per_room:
+            bedrooms_per_room = X[:, bedrooms_ix] / X[:, rooms_ix]
+            return np.c_[X, rooms_per_household, population_per_household,
+            bedrooms_per_room]
+        else:
+            return np.c_[X, rooms_per_household, population_per_household]
+
+pipline=Pipeline([
+    ('imputer',SimpleImputer(strategy='median')),
+    ('adder',CombinedAttributesAdder()),
+    ('standarize',StandardScaler())
+
+])
+housing_num_transform=pipline.fit_transform(housing_num)
+housing_num_transform
+#%%
+from sklearn.pipeline import FeatureUnion
+from data  import CategoricalEncoder
+class DataFrameSelector(BaseEstimator, TransformerMixin):
+    def __init__(self, attribute_names):
+        self.attribute_names = attribute_names
+    def fit(self, X, y=None):
+        return self
+    def transform(self, X):
+        return X[self.attribute_names].values
+num_attribs = list(housing_num)
+cat_attribs = ["ocean_proximity"]
+num_pipeline = Pipeline([
+    ('selector', DataFrameSelector(num_attribs)),
+    ('imputer', SimpleImputer(strategy="median")),
+    ('attribs_adder', CombinedAttributesAdder(a)),
+    ('std_scaler', StandardScaler()),
+])
+cat_pipeline = Pipeline([
+    ('selector', DataFrameSelector(cat_attribs)),
+    ('label_binarizer', CategoricalEncoder()),
+])
+full_pipeline = FeatureUnion(transformer_list=[
+    ("num_pipeline", num_pipeline),
+    ("cat_pipeline", cat_pipeline),
+])
+house_res=full_pipeline.fit_transform(housing)
+house_res=house_res.toarray()
+#%%
+# 线性回归
+from sklearn.linear_model import LinearRegression
+model=LinearRegression()
+model.fit(house_res,labels)
+
+#%%
+# 线性回归
+data_pre=housing[:5]
+label_pre=labels.iloc[:5].values
+print(data_pre)
+print(label_pre)
+some_data_pre=full_pipeline.transform(data_pre)
+print("Predictions:\t", model.predict(some_data_pre))
+print(label_pre)
+
+#%%
+from sklearn.metrics import mean_absolute_error
+housing_pre=full_pipeline.transform(housing)
+predict=model.predict(housing_pre)
+mse=mean_absolute_error(labels,predict)
+print(mse)
+np.sqrt(mse)
+
+#%%
+# 决策树
+from sklearn.tree import DecisionTreeRegressor
+tree=DecisionTreeRegressor()
+tree.fit(housing_pre,labels)
+predict=tree.predict(housing_pre)
+mse=mean_absolute_error(labels,predict)
+print(mse)
+np.sqrt(mse)
+
+#%%
+# k折交叉验证
+from sklearn.model_selection import cross_val_score
+scores=cross_val_score(tree,housing_pre,labels,scoring='neg_mean_squared_error',cv=10)
+rmse_scores=np.sqrt(-scores)
+print(scores)
+print(rmse_scores)
+#%%
+print(scores.mean())
+print(rmse_scores.mean())
+#%%
+# 随机森林
+from sklearn.ensemble import RandomForestRegressor
+forest=RandomForestRegressor()
+forest.fit(housing_pre,labels)
+# predict=forest.predict(housing_pre)
+from sklearn.model_selection import cross_val_score
+scores=cross_val_score(forest,housing_pre,labels,scoring='neg_mean_squared_error',cv=10)
+rmse_scores=np.sqrt(-scores)
+print(scores)
+print(rmse_scores)
+#%%
+print(scores.mean())
+print(rmse_scores.mean())
+
+#%%
+# 保存模型
+from sklearn.externals import joblib
+joblib.dump(forest,'forest.pkl')
+# 载入模型
+# my_model_loaded = joblib.load("my_model.pkl")
+
+#%%
+# 模型微调
+from sklearn.model_selection import GridSearchCV
+param_grid = [
+{'n_estimators': [3, 10, 30], 'max_features': [2, 4, 6, 8]},
+{'bootstrap': [False], 'n_estimators': [3, 10], 'max_features': [2, 3, 4]},
+]
+gridsearch=GridSearchCV(forest,param_grid,scoring='neg_mean_squared_error',cv=5)
+gridsearch.fit(housing_pre,labels)
+
+
+#%%
+print(gridsearch.best_params_)
+cvres=gridsearch.cv_results_
+for meanscore,param in zip(cvres['mean_test_score'],cvres['params']):
+    print(np.sqrt(-meanscore),param)
+
+#%%
+# 每个属性对于做出准确预测的相对重要性：
+gridsearch.best_estimator_.feature_importances_
+
+#%%
+# 将重要性分数和属性名放到一起：
+
+
+#%%
+# 测试
+from sklearn.metrics import mean_absolute_error
+final_model=gridsearch.best_estimator_
+X_test=test_set.drop('median_house_value',axis=1)
+X_test["rooms_per_household"] = X_test["total_rooms"]/X_test["households"]
+X_test["bedrooms_per_room"] = X_test["total_bedrooms"]/X_test["total_rooms"]
+X_test["population_per_household"]=X_test["population"]/X_test["households"]
+
+Y_test=test_set['median_house_value'].copy()
+X_test_pre=full_pipeline.transform(X_test)
+final_predict=final_model.predict(X_test_pre)
+final_mse = mean_absolute_error(Y_test, final_predict)
+final_rmse = np.sqrt(final_mse) # => evaluates to 48,209.6
+print(final_mse,final_rmse)
+
+#%%
