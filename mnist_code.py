@@ -282,3 +282,9 @@ print(testdata.shape)
 clean=knn.predict([testdata])
 print(clean)
 plt.imshow(clean.reshape(28,28))
+
+
+#%%
+plt.imshow(X_train[0].reshape(28,28))
+
+#%%
